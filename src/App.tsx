@@ -1123,48 +1123,46 @@ export default function App() {
     }
   };
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "AQ.Ab8RN6LihGgDcXnZ9VEw8sEzcgTjiR7pSRjO8hlnZpLiZWgF_A";
+import { GoogleGenAI } from '@google/genai';
+
+const GEMINI_API_KEY = "AQ.Ab8RN6LihGgDcXnZ9VEw8sEzcgTjiR7pSRjO8hlnZpLiZWgF_A";
 
 const speakText = async (text: string) => {
-  const apiKey = "AQ.Ab8RN6LihGgDcXnZ9VEw8sEzcgTjiR7pSRjO8hlnZpLiZWgF_A"; // Replace with your free key
-
-  if (!apiKey || apiKey.includes("YOUR_")) {
-    console.error("API Key is missing!");
-    return;
-  }
-
   try {
-    console.log("Requesting realistic speech generation...");
+    console.log("Generating natural Emirati voice audio...");
+    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
-    // Using a CORS proxy bypass for frontend-only Vite deployment
-    const url = `https://api.allorigins.win/raw?url=` + encodeURIComponent(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`
-    );
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{ text: `Read this text aloud in a natural, expressive, native Emirati/Gulf Arabic accent. Do not translate it, just voice it: ${text}` }]
-        }]
-      })
+    const interaction = await ai.interactions.create({
+      model: 'gemini-3.8-flash-tts',
+      input: [
+        {
+          type: "user_input",
+          content: [
+            {
+              type: "text",
+              text: `Speak this sentence naturally with an authentic regional Emirati/Gulf Arabic accent: ${text}`
+            }
+          ]
+        }
+      ],
+      responseFormat: { type: 'audio' }
     });
 
-    const data = await response.json();
-    console.log("Raw API Response:", data);
-
-    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    
-    if (responseText) {
-      // If text-based response returns, use an ultra-natural browser voice config as a secondary fallback pipeline
-      const utterance = new SpeechSynthesisUtterance(responseText);
-      utterance.lang = 'ar-AE'; // Forces UAE Emirati regional accent profile
-      utterance.rate = 0.95;    // Smooth, human conversational pacing
-      window.speechSynthesis.speak(utterance);
+    if (interaction.output_audio?.data) {
+      const audioBuffer = Uint8Array.from(atob(interaction.output_audio.data), c => c.charCodeAt(0));
+      const blob = new Blob([audioBuffer], { type: 'audio/wav' });
+      const audio = new Audio(URL.createObjectURL(blob));
+      await audio.play();
+    } else {
+      console.warn("Audio payload missing, checking text response fallback...");
+      if (interaction.output_text) {
+        const utterance = new SpeechSynthesisUtterance(interaction.output_text);
+        utterance.lang = 'ar-AE';
+        window.speechSynthesis.speak(utterance);
+      }
     }
-  } catch (err) {
-    console.error("Audio generation error:", err);
+  } catch (error) {
+    console.error("Speech generation error:", error);
   }
 };
   const getLessonVocab = (lessonId) => {
