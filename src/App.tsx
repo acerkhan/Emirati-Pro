@@ -1,6 +1,5 @@
 // @ts-nocheck
 import React, { useState } from 'react';
-import { GoogleGenAI } from '@google/genai';
 
 // Your top-level configuration
 const GEMINI_API_KEY = "AQ.Ab8RN6LihGgDcXnZ9VEw8sEzcgTjiR7pSRjO8hlnZpLiZWgF_A";
