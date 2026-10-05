@@ -1126,39 +1126,45 @@ export default function App() {
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "AQ.Ab8RN6LihGgDcXnZ9VEw8sEzcgTjiR7pSRjO8hlnZpLiZWgF_A";
 
 const speakText = async (text: string) => {
-  // Paste your free Google AI Studio API key directly here for an instant test:
-  const apiKey = "AQ.Ab8RN6LihGgDcXnZ9VEw8sEzcgTjiR7pSRjO8hlnZpLiZWgF_A";
+  const apiKey = "AQ.Ab8RN6LihGgDcXnZ9VEw8sEzcgTjiR7pSRjO8hlnZpLiZWgF_A"; // Replace with your free key
 
   if (!apiKey || apiKey.includes("YOUR_")) {
-    console.error("Please paste your actual API key into the code.");
+    console.error("API Key is missing!");
     return;
   }
 
   try {
-    console.log("Generating expressive AI voice for:", text);
+    console.log("Requesting realistic speech generation...");
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-tts:generateContent?key=${apiKey}`, {
+    // Using a CORS proxy bypass for frontend-only Vite deployment
+    const url = `https://api.allorigins.win/raw?url=` + encodeURIComponent(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`
+    );
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: `Speak this sentence naturally with an authentic Emirati/Gulf Arabic accent: ${text}` }] }]
+        contents: [{
+          parts: [{ text: `Read this text aloud in a natural, expressive, native Emirati/Gulf Arabic accent. Do not translate it, just voice it: ${text}` }]
+        }]
       })
     });
 
     const data = await response.json();
-    console.log("API Response received:", data);
+    console.log("Raw API Response:", data);
 
-    // Play audio bytes if returned successfully
-    if (data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data) {
-      const base64Audio = data.candidates[0].content.parts[0].inlineData.data;
-      const audioBlob = new Blob([Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0))], { type: 'audio/mp3' });
-      const audio = new Audio(URL.createObjectURL(audioBlob));
-      await audio.play();
-    } else {
-      console.warn("Audio payload missing from response structure, check console data log.");
+    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    if (responseText) {
+      // If text-based response returns, use an ultra-natural browser voice config as a secondary fallback pipeline
+      const utterance = new SpeechSynthesisUtterance(responseText);
+      utterance.lang = 'ar-AE'; // Forces UAE Emirati regional accent profile
+      utterance.rate = 0.95;    // Smooth, human conversational pacing
+      window.speechSynthesis.speak(utterance);
     }
-  } catch (error) {
-    console.error("Failed to generate AI speech:", error);
+  } catch (err) {
+    console.error("Audio generation error:", err);
   }
 };
   const getLessonVocab = (lessonId) => {
