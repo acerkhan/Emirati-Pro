@@ -1123,51 +1123,33 @@ export default function App() {
     }
   };
 
-  const speakText = (text: string, lang = 'ar-AE') => {
-  if (!('speechSynthesis' in window)) {
-    console.warn('Speech synthesis not supported.');
-    return;
+  const speakText = (text: string, lang = 'ar') => {
+  try {
+    // Clean up text and encode for url
+    const encodedText = encodeURIComponent(text);
+    
+    // Uses Google's public speech synthesis engine directly — no API key needed, completely free
+    const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=${lang}&client=tw-ob`;
+    
+    const audio = new Audio(audioUrl);
+    audio.play().catch(err => {
+      console.warn("Cloud audio playback blocked or failed, falling back to browser speech:", err);
+      // Fallback to local browser speech if network blocks it
+      fallbackBrowserSpeech(text, lang === 'ar' ? 'ar-AE' : lang);
+    });
+  } catch (error) {
+    console.error("Audio error:", error);
   }
+};
 
-  window.speechSynthesis.cancel();
-
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = lang;
-  utterance.rate = 0.85; // Slightly slower for natural dialect pacing
-  utterance.pitch = 1.0;
-
-  // Function to assign the best available UAE/Gulf or Arabic voice
-  const setBestVoice = () => {
-    const voices = window.speechSynthesis.getVoices();
-    
-    // Priority 1: UAE Voice (ar-AE)
-    // Priority 2: Any Arabic voice (ar-*)
-    const selectedVoice = 
-      voices.find(v => v.lang === 'ar-AE' || v.lang.toLowerCase().includes('ae')) ||
-      voices.find(v => v.lang.startsWith('ar')) ||
-      voices.find(v => v.lang.includes('AR'));
-
-    if (selectedVoice) {
-      utterance.voice = selectedVoice;
-    }
-    
+// Fallback helper
+const fallbackBrowserSpeech = (text: string, lang: string) => {
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = lang;
+    utterance.rate = 0.85;
     window.speechSynthesis.speak(utterance);
-  };
-
-  // Browsers load voices asynchronously; handle both immediate and delayed availability
-  const voices = window.speechSynthesis.getVoices();
-  if (voices.length > 0) {
-    setBestVoice();
-  } else {
-    window.speechSynthesis.onvoiceschanged = () => {
-      setBestVoice();
-    };
-    // Fallback trigger if event doesn't fire immediately
-    setTimeout(() => {
-      if (!window.speechSynthesis.speaking && !window.speechSynthesis.pending) {
-        window.speechSynthesis.speak(utterance);
-      }
-    }, 100);
   }
 };
 
