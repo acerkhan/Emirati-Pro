@@ -1123,17 +1123,53 @@ export default function App() {
     }
   };
 
-  const speakText = (text, lang = 'ar-SA') => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = lang;
-      utterance.rate = 0.9;
-      window.speechSynthesis.speak(utterance);
-    } else {
-      console.warn('Speech synthesis not supported.');
+  const speakText = (text: string, lang = 'ar-AE') => {
+  if (!('speechSynthesis' in window)) {
+    console.warn('Speech synthesis not supported.');
+    return;
+  }
+
+  window.speechSynthesis.cancel();
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = lang;
+  utterance.rate = 0.85; // Slightly slower for natural dialect pacing
+  utterance.pitch = 1.0;
+
+  // Function to assign the best available UAE/Gulf or Arabic voice
+  const setBestVoice = () => {
+    const voices = window.speechSynthesis.getVoices();
+    
+    // Priority 1: UAE Voice (ar-AE)
+    // Priority 2: Any Arabic voice (ar-*)
+    const selectedVoice = 
+      voices.find(v => v.lang === 'ar-AE' || v.lang.toLowerCase().includes('ae')) ||
+      voices.find(v => v.lang.startsWith('ar')) ||
+      voices.find(v => v.lang.includes('AR'));
+
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
     }
+    
+    window.speechSynthesis.speak(utterance);
   };
+
+  // Browsers load voices asynchronously; handle both immediate and delayed availability
+  const voices = window.speechSynthesis.getVoices();
+  if (voices.length > 0) {
+    setBestVoice();
+  } else {
+    window.speechSynthesis.onvoiceschanged = () => {
+      setBestVoice();
+    };
+    // Fallback trigger if event doesn't fire immediately
+    setTimeout(() => {
+      if (!window.speechSynthesis.speaking && !window.speechSynthesis.pending) {
+        window.speechSynthesis.speak(utterance);
+      }
+    }, 100);
+  }
+};
 
   const getLessonVocab = (lessonId) => {
     const items = MASTER_VOCABULARY.filter((v) => v.lesson === lessonId);
