@@ -1129,7 +1129,7 @@ const GEMINI_API_KEY = "AQ.Ab8RN6LihGgDcXnZ9VEw8sEzcgTjiR7pSRjO8hlnZpLiZWgF_A";
 
 const speakText = async (text: string) => {
   try {
-    console.log("Generating text response for speech...");
+    console.log("Generating natural Emirati voice phrasing...");
 
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
@@ -1137,33 +1137,37 @@ const speakText = async (text: string) => {
       body: JSON.stringify({
         contents: [{
           parts: [{
-            text: `Translate or rewrite this naturally in authentic Emirati Gulf Arabic dialect: ${text}`
+            text: `Act as a native Emirati speaker. Rewrite this text in authentic local Gulf Arabic dialect using phonetic spelling or natural conversational spacing so it sounds human when read aloud: ${text}`
           }]
         }]
       })
     });
 
     const data = await response.json();
-    console.log("API response:", data);
-
     const spokenText = data.candidates?.[0]?.content?.parts?.[0]?.text || text;
 
-    // Stop any current speech
     window.speechSynthesis.cancel();
-
     const utterance = new SpeechSynthesisUtterance(spokenText);
-    utterance.lang = 'ar-AE'; // Forces native UAE Arabic accent
-    utterance.rate = 0.90;    // Natural human conversational speed
-    utterance.pitch = 1.0;
+    utterance.lang = 'ar-AE';
+    
+    // Fine-tune tone and speed for a natural human cadence
+    utterance.rate = 0.88; // Slower, more natural conversational pace
+    utterance.pitch = 0.95; // Slightly warmer pitch
+
+    // Select a native Arabic voice if available in the browser registry
+    const voices = window.speechSynthesis.getVoices();
+    const arabicVoice = voices.find(v => v.lang === 'ar-AE' || v.lang.startsWith('ar')) || voices.find(v => v.lang.includes('ar'));
+    if (arabicVoice) {
+      utterance.voice = arabicVoice;
+    }
 
     window.speechSynthesis.speak(utterance);
   } catch (error) {
-    console.error("Speech error, using direct fallback:", error);
-    
-    // Immediate fallback playback
-    const fallbackUtterance = new SpeechSynthesisUtterance(text);
-    fallbackUtterance.lang = 'ar-AE';
-    window.speechSynthesis.speak(fallbackUtterance);
+    console.error("Speech generation error:", error);
+    const fallback = new SpeechSynthesisUtterance(text);
+    fallback.lang = 'ar-AE';
+    fallback.rate = 0.88;
+    window.speechSynthesis.speak(fallback);
   }
 };
   const getLessonVocab = (lessonId) => {
