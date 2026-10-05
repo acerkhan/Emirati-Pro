@@ -1123,33 +1123,29 @@ export default function App() {
     }
   };
 
-  const speakText = (text: string, lang = 'ar') => {
-  try {
-    // Clean up text and encode for url
-    const encodedText = encodeURIComponent(text);
-    
-    // Uses Google's public speech synthesis engine directly — no API key needed, completely free
-    const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=${lang}&client=tw-ob`;
-    
-    const audio = new Audio(audioUrl);
-    audio.play().catch(err => {
-      console.warn("Cloud audio playback blocked or failed, falling back to browser speech:", err);
-      // Fallback to local browser speech if network blocks it
-      fallbackBrowserSpeech(text, lang === 'ar' ? 'ar-AE' : lang);
-    });
-  } catch (error) {
-    console.error("Audio error:", error);
-  }
-};
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "AQ.Ab8RN6LihGgDcXnZ9VEw8sEzcgTjiR7pSRjO8hlnZpLiZWgF_A";
 
-// Fallback helper
-const fallbackBrowserSpeech = (text: string, lang: string) => {
-  if ('speechSynthesis' in window) {
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = lang;
-    utterance.rate = 0.85;
-    window.speechSynthesis.speak(utterance);
+const speakText = async (text: string) => {
+  if (!GEMINI_API_KEY || GEMINI_API_KEY === "AQ.Ab8RN6LihGgDcXnZ9VEw8sEzcgTjiR7pSRjO8hlnZpLiZWgF_A") {
+    console.warn("Please insert your Google AI Studio API key.");
+    return;
+  }
+
+  try {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: `Speak this in an authentic Emirati/Gulf Arabic accent: ${text}` }] }]
+      })
+    });
+
+    const data = await response.json();
+    console.log("Gemini response:", data);
+    
+    // Play the generated text response or handle audio output directly
+  } catch (error) {
+    console.error("Error generating AI speech:", error);
   }
 };
 
