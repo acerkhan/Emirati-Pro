@@ -1126,29 +1126,41 @@ export default function App() {
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "AQ.Ab8RN6LihGgDcXnZ9VEw8sEzcgTjiR7pSRjO8hlnZpLiZWgF_A";
 
 const speakText = async (text: string) => {
-  if (!GEMINI_API_KEY || GEMINI_API_KEY === "AQ.Ab8RN6LihGgDcXnZ9VEw8sEzcgTjiR7pSRjO8hlnZpLiZWgF_A") {
-    console.warn("Please insert your Google AI Studio API key.");
+  // Paste your free Google AI Studio API key directly here for an instant test:
+  const apiKey = "AQ.Ab8RN6LihGgDcXnZ9VEw8sEzcgTjiR7pSRjO8hlnZpLiZWgF_A";
+
+  if (!apiKey || apiKey.includes("YOUR_")) {
+    console.error("Please paste your actual API key into the code.");
     return;
   }
 
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+    console.log("Generating expressive AI voice for:", text);
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-tts:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: `Speak this in an authentic Emirati/Gulf Arabic accent: ${text}` }] }]
+        contents: [{ parts: [{ text: `Speak this sentence naturally with an authentic Emirati/Gulf Arabic accent: ${text}` }] }]
       })
     });
 
     const data = await response.json();
-    console.log("Gemini response:", data);
-    
-    // Play the generated text response or handle audio output directly
+    console.log("API Response received:", data);
+
+    // Play audio bytes if returned successfully
+    if (data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data) {
+      const base64Audio = data.candidates[0].content.parts[0].inlineData.data;
+      const audioBlob = new Blob([Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0))], { type: 'audio/mp3' });
+      const audio = new Audio(URL.createObjectURL(audioBlob));
+      await audio.play();
+    } else {
+      console.warn("Audio payload missing from response structure, check console data log.");
+    }
   } catch (error) {
-    console.error("Error generating AI speech:", error);
+    console.error("Failed to generate AI speech:", error);
   }
 };
-
   const getLessonVocab = (lessonId) => {
     const items = MASTER_VOCABULARY.filter((v) => v.lesson === lessonId);
     if (items.length === 0) {
