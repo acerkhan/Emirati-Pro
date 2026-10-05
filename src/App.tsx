@@ -1127,8 +1127,6 @@ export default function App() {
     }
   };
 
-import { GoogleGenAI } from '@google/genai';
-
 const GEMINI_API_KEY = "AQ.Ab8RN6LihGgDcXnZ9VEw8sEzcgTjiR7pSRjO8hlnZpLiZWgF_A";
 
 const speakText = async (text: string) => {
