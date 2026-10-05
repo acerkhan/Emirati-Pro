@@ -1129,40 +1129,41 @@ const GEMINI_API_KEY = "AQ.Ab8RN6LihGgDcXnZ9VEw8sEzcgTjiR7pSRjO8hlnZpLiZWgF_A";
 
 const speakText = async (text: string) => {
   try {
-    console.log("Generating natural Emirati voice audio...");
-    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+    console.log("Generating text response for speech...");
 
-    const interaction = await ai.interactions.create({
-      model: 'gemini-3.8-flash-tts',
-      input: [
-        {
-          type: "user_input",
-          content: [
-            {
-              type: "text",
-              text: `Speak this sentence naturally with an authentic regional Emirati/Gulf Arabic accent: ${text}`
-            }
-          ]
-        }
-      ],
-      responseFormat: { type: 'audio' }
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: `Translate or rewrite this naturally in authentic Emirati Gulf Arabic dialect: ${text}`
+          }]
+        }]
+      })
     });
 
-    if (interaction.output_audio?.data) {
-      const audioBuffer = Uint8Array.from(atob(interaction.output_audio.data), c => c.charCodeAt(0));
-      const blob = new Blob([audioBuffer], { type: 'audio/wav' });
-      const audio = new Audio(URL.createObjectURL(blob));
-      await audio.play();
-    } else {
-      console.warn("Audio payload missing, checking text response fallback...");
-      if (interaction.output_text) {
-        const utterance = new SpeechSynthesisUtterance(interaction.output_text);
-        utterance.lang = 'ar-AE';
-        window.speechSynthesis.speak(utterance);
-      }
-    }
+    const data = await response.json();
+    console.log("API response:", data);
+
+    const spokenText = data.candidates?.[0]?.content?.parts?.[0]?.text || text;
+
+    // Stop any current speech
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(spokenText);
+    utterance.lang = 'ar-AE'; // Forces native UAE Arabic accent
+    utterance.rate = 0.90;    // Natural human conversational speed
+    utterance.pitch = 1.0;
+
+    window.speechSynthesis.speak(utterance);
   } catch (error) {
-    console.error("Speech generation error:", error);
+    console.error("Speech error, using direct fallback:", error);
+    
+    // Immediate fallback playback
+    const fallbackUtterance = new SpeechSynthesisUtterance(text);
+    fallbackUtterance.lang = 'ar-AE';
+    window.speechSynthesis.speak(fallbackUtterance);
   }
 };
   const getLessonVocab = (lessonId) => {
