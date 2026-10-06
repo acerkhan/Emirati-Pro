@@ -1129,15 +1129,16 @@ const GEMINI_API_KEY = "AQ.Ab8RN6LihGgDcXnZ9VEw8sEzcgTjiR7pSRjO8hlnZpLiZWgF_A";
 
 const speakText = async (text: string) => {
   try {
-    console.log("Generating natural Emirati voice phrasing...");
+    console.log("Generating natural phonetic Emirati cadence...");
 
+    // Ask Gemini to rewrite the text with explicit vowel markings and phonetic spacing
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{
           parts: [{
-            text: `Act as a native Emirati speaker. Rewrite this text in authentic local Gulf Arabic dialect using phonetic spelling or natural conversational spacing so it sounds human when read aloud: ${text}`
+            text: `Act as a professional native Emirati speaker voice coach. Take this text and rewrite it using precise Arabic diacritics (Tashkeel) and rhythmic spacing so that when a standard speech synthesizer reads it aloud letter-by-letter, it sounds human, warm, and naturally paced in the Emirati dialect: "${text}"`
           }]
         }]
       })
@@ -1149,14 +1150,12 @@ const speakText = async (text: string) => {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(spokenText);
     utterance.lang = 'ar-AE';
-    
-    // Fine-tune tone and speed for a natural human cadence
-    utterance.rate = 0.88; // Slower, more natural conversational pace
-    utterance.pitch = 0.95; // Slightly warmer pitch
+    utterance.rate = 0.82; // Slower cadence to simulate human breath and pacing
+    utterance.pitch = 0.95; // Warm, natural vocal tone
 
-    // Select a native Arabic voice if available in the browser registry
+    // Attempt to match the best available Arabic regional voice
     const voices = window.speechSynthesis.getVoices();
-    const arabicVoice = voices.find(v => v.lang === 'ar-AE' || v.lang.startsWith('ar')) || voices.find(v => v.lang.includes('ar'));
+    const arabicVoice = voices.find(v => v.lang === 'ar-AE' || v.lang.includes('ar'));
     if (arabicVoice) {
       utterance.voice = arabicVoice;
     }
@@ -1166,7 +1165,7 @@ const speakText = async (text: string) => {
     console.error("Speech generation error:", error);
     const fallback = new SpeechSynthesisUtterance(text);
     fallback.lang = 'ar-AE';
-    fallback.rate = 0.88;
+    fallback.rate = 0.85;
     window.speechSynthesis.speak(fallback);
   }
 };
