@@ -1,8 +1,13 @@
 import { defineConfig } from 'vite'
+2
 import react from '@vitejs/plugin-react'
-
-// https://vitejs.dev/config/
+3
+ 
+4
 export default defineConfig({
-  plugins: [react()],
-  base: '/Emirati-Pro/', // Must match your GitHub repository name exactly
+5
+plugins: [react()],
+6
+base: '/Emirati-Pro/',
+7
 })
